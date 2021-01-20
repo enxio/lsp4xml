@@ -15,10 +15,8 @@ package org.eclipse.lemminx.services.extensions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,7 +56,6 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	private final List<IRenameParticipant> renameParticipants;
 	private final List<IFormatterParticipant> formatterParticipants;
 	private final List<ISymbolsProviderParticipant> symbolsProviderParticipants;
-	private final List<IWorkspaceServiceParticipant> workspaceServiceParticipants;
 	private IXMLDocumentProvider documentProvider;
 	private IXMLValidationService validationService;
 	private IXMLCommandService commandService;
@@ -71,7 +68,7 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 
 	private IXMLNotificationService notificationService;
 
-	private final Map<Class<?>, Object> components;
+	private final Map<Class, Object> components;
 
 	public XMLExtensionsRegistry() {
 		extensions = new ArrayList<>();
@@ -88,7 +85,6 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		renameParticipants = new ArrayList<>();
 		formatterParticipants = new ArrayList<>();
 		symbolsProviderParticipants = new ArrayList<>();
-		workspaceServiceParticipants = new ArrayList<>();
 		resolverExtensionManager = new URIResolverExtensionManager();
 		components = new HashMap<>();
 		registerComponent(resolverExtensionManager);
@@ -200,15 +196,6 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		return symbolsProviderParticipants;
 	}
 
-	/**
-	 * @return the registered workspace service participants.
-	 * @since 0.14.2
-	 */
-	public Collection<IWorkspaceServiceParticipant> getWorkspaceServiceParticipants() {
-		initializeIfNeeded();
-		return workspaceServiceParticipants;
-	}
-
 	public void initializeIfNeeded() {
 		if (initialized) {
 			return;
@@ -225,14 +212,10 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		if (commandService != null) {
 			commandService.beginCommandsRegistration();
 		}
-		Iterator<IXMLExtension> extensions = ServiceLoader.load(IXMLExtension.class).iterator();
-		while (extensions.hasNext()) {
-			try {
-				registerExtension(extensions.next());
-			} catch (ServiceConfigurationError e) {
-				LOGGER.log(Level.SEVERE, "Error while instantiating extension", e);
-			}
-		}
+		ServiceLoader<IXMLExtension> extensions = ServiceLoader.load(IXMLExtension.class);
+		extensions.forEach(extension -> {
+			registerExtension(extension);
+		});
 		initialized = true;
 		if (commandService != null) {
 			commandService.endCommandsRegistration();
@@ -372,24 +355,6 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 
 	public void unregisterSymbolsProviderParticipant(ISymbolsProviderParticipant symbolsProviderParticipant) {
 		symbolsProviderParticipants.remove(symbolsProviderParticipant);
-	}
-	
-	/**
-	 * Register a new workspace service participant
-	 * @param workspaceServiceParticipant the participant to register
-	 * @since 0.14.2
-	 */
-	public void registerWorkspaceServiceParticipant(IWorkspaceServiceParticipant workspaceServiceParticipant) {
-		workspaceServiceParticipants.add(workspaceServiceParticipant);
-	}
-
-	/**
-	 * Unregister a new workspace service participant.
-	 * @param workspaceServiceParticipant the participant to unregister
-	 * @since 0.14.2
-	 */
-	public void unregisterWorkspaceServiceParticipant(IWorkspaceServiceParticipant workspaceServiceParticipant) {
-		workspaceServiceParticipants.remove(workspaceServiceParticipant);
 	}
 
 	/**

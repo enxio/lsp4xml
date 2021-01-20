@@ -168,8 +168,7 @@
 							<imageName>lemminx-${os.detected.classifier}-${project.version}</imageName>
 							<buildArgs>
 								--no-fallback
-								--enable-http 
-								--enable-https
+								-H:EnableURLProtocols=https,http
 								${graalvm.static}
 							</buildArgs>
 						</configuration>
